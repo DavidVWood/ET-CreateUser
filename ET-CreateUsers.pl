@@ -2,12 +2,28 @@
 use strict;
 use warnings;
 
+######################################################################
+# file: ET-CreateUsers.pl
+# purpose: read user information from CSV file (first argument) and 
+#          push data to ET via the GEMS user/post API
+######################################################################
+
 use LWP::UserAgent ();
+use Data::Dumper;
 
-my $file = $ARGV[0] or die "Need to get CSV file on the command line\n";
+sub logMessage($);
+sub dieMessage($);
 
-open(my $data, '<', $file) or die "Could not open '$file' $!\n";
+# verify/open CSV file
+my $file = $ARGV[0] or dieMessage "Need to get CSV file on the command line\n";
+open(my $data, '<', $file) or dieMessage "Could not open '$file' $!\n";
 
+# create/open LOG file
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+my $ymd = sprintf("%04d%02d%02d",$year+1900,$mon+1,$mday);
+open LOG, ">>ET-CreateUsers_$ymd.log" or die $!; # create if not there
+ 
+# process lines to ET via GEMS user/post API
 while (my $line = <$data>) {
   chomp $line;
 
@@ -59,7 +75,7 @@ while (my $line = <$data>) {
   $json .= "\n\t]\n";
   $json .= "}\n";
   
-  #print "$json\n";
+  logMessage "POST: $json\n";
   
   # post JSON to URL
   my $uri = 'http://relaunch-web-dev.usatoday.com:2103/EmailApiService/EmailApiService.svc/user';
@@ -69,5 +85,43 @@ while (my $line = <$data>) {
   $req->content( $json );
   
   my $lwp = LWP::UserAgent->new;
-  $lwp->request( $req );
+  my $response = $lwp->request( $req );
+  
+  if ($response->is_success) {
+    logMessage "RESPONSE: " . $response->decoded_content . "\n";
+  }
+  else {
+    logMessage $response->status_line;
+    close LOG;
+    die "";
+  }
+}
+
+close LOG;
+
+exit(0);
+
+######################################################################
+######################################################################
+######################################################################
+######################################################################
+
+sub logMessage ($) {
+  my ($msg) = @_;
+
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+  my $ts = sprintf("%02d/%02d/%04d-%02d:%02d.%02d",$mon+1,$mday,$year+1900,$hour,$min,$sec);
+
+  print LOG $ts."\t".$msg;
+  print $msg;
+}
+
+sub dieMessage ($) {
+  my ($msg) = @_;
+
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+  my $ts = sprintf("%02d/%02d/%04d-%02d:%02d.%02d",$mon+1,$mday,$year+1900,$hour,$min,$sec);
+
+  print LOG $ts."\t".$msg;
+  die $msg;
 }
