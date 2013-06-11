@@ -1,0 +1,2 @@
+emailAddress,notificationEmailAddress,username,password,name,defaultBusinessUnitCode,timeZone,locale,businessUnitCode,roleCode
+testman1@gannett.com,testman1@gannett.com,testman106112013,@testman10611,Test Man1,GANNETT,76,en-US,GANNETT|QA102-E|QA103-E,SYS_EDIT_ADMIN|SYS_COMM_ADMIN 
